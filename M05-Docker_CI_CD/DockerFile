@@ -1,0 +1,30 @@
+# ---- base image -------------------------------------------------------------
+FROM python:3.12-slim
+
+# ---- metadata (optional) ----------------------------------------------------
+LABEL maintainer="you@example.com"
+
+# ---- prevent Python from writing .pyc files & buffering stdout -------------
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# ---- install system deps (if you need any, keep it lean) --------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+# ---- create a non‑root user (good practice) ---------------------------------
+RUN useradd --create-home appuser
+WORKDIR /home/appuser
+USER appuser
+
+# ---- copy requirements first, then install (leverages Docker cache) --------
+COPY --chown=appuser requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ---- copy the application code ---------------------------------------------
+COPY --chown=appuser . .
+
+# ---- expose port and set default run command --------------------------------
+EXPOSE 5000
+CMD ["python", "HelloWorld.py"]
